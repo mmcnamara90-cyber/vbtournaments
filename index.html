@@ -235,11 +235,7 @@ input::placeholder{color:var(--text-dim)}
 
   <!-- Courts 2 & 3 -->
   <div class="s-card">
-    <div class="s-label">Courts 2 & 3 <span class="tag">King of Court</span></div>
-    <div class="fmt-row">
-      <button class="fmt-btn sel" id="fmt-4v4" onclick="setFmt('4v4')">4 v 4</button>
-      <button class="fmt-btn" id="fmt-5v5" onclick="setFmt('5v5')">5 v 5</button>
-    </div>
+    <div class="s-label">Courts 2 & 3 <span class="tag">5 v 5</span></div>
     <div id="c23-teams"></div>
     <button class="add-btn" onclick="addC23Team()">+ Add team</button>
     <div class="cfg-row">
@@ -323,7 +319,7 @@ let S = {
 
   c23: {
     target: 11,
-    fmt: '4v4',
+    fmt: '5v5',
     teams: [],
     c2: {tA:null,tB:null,sA:0,sB:0,on:false},
     c3: {tA:null,tB:null,sA:0,sB:0,on:false},
@@ -331,13 +327,25 @@ let S = {
     demoted: [],      // c2 losers waiting for c3
     queue: [],        // general waiting list
     hist: [],
+    playoff: {
+      active: false,
+      seeds: [],
+      games: {
+        qfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        qfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        consolation:  {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        sfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        sfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+        championship: {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      },
+    },
   },
 };
 
 // setup scratch
 let setupC1 = ['','','','','',''];
 let setupC23 = ['','','','','',''];
-let setupFmt = '4v4';
+let setupFmt = '5v5';
 
 // ================================================================
 // SETUP
@@ -391,11 +399,6 @@ function remC23(i) {
   render_c23_inputs();
 }
 
-function setFmt(f) {
-  setupFmt = f;
-  document.getElementById('fmt-4v4').classList.toggle('sel', f === '4v4');
-  document.getElementById('fmt-5v5').classList.toggle('sel', f === '5v5');
-}
 
 function startTournament() {
   const c1n = setupC1.map(n => n.trim()).filter(Boolean);
@@ -429,6 +432,17 @@ function startTournament() {
   S.c23.target = c23t;
   S.c23.fmt = setupFmt;
   S.c23.queue = [...S.c23.teams.map(t => t.id)];
+  S.c23.playoff = {
+    active: false, seeds: [],
+    games: {
+      qfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      qfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      consolation:  {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      sfA:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      sfB:          {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+      championship: {tA:null,tB:null,sA:0,sB:0,on:false,done:false,wId:null,lId:null},
+    },
+  };
 
   S.coachPin = pin || '1234';
   S.phase = 'game';
@@ -529,7 +543,7 @@ function rCourt1() {
       return `<div class="gcard idle">
         <div class="gcard-label">Game ${idx+1}</div>
         <div class="idle-placeholder">No game assigned</div>
-        ${S.coachOn && sitting.length >= 2 ?
+        ${sitting.length >= 2 ?
           `<button class="end-btn" onclick="coachLaunchC1('${g.id}')">Start Game</button>` : ''}
       </div>`;
     }
@@ -541,19 +555,19 @@ function rCourt1() {
       <div class="gcard-label">Game ${idx+1}<span class="live-dot"></span></div>
       <div class="score-team">
         <div class="tn">${xe(tA.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
+        <div class="sc-btns">
           <button class="sc-btn p" onclick="adj('c1','${g.id}','A',1)">+</button>
           <button class="sc-btn m" onclick="adj('c1','${g.id}','A',-1)">−</button>
-        </div>` : ''}
+        </div>
         <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="score-team">
         <div class="tn">${xe(tB.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
+        <div class="sc-btns">
           <button class="sc-btn p" onclick="adj('c1','${g.id}','B',1)">+</button>
           <button class="sc-btn m" onclick="adj('c1','${g.id}','B',-1)">−</button>
-        </div>` : ''}
+        </div>
         <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
       </div>
       <button class="end-btn ${reached ? '' : 'early'}" onclick="endC1('${g.id}')">
@@ -641,7 +655,7 @@ function rPlayoff(el) {
       return `<div class="gcard idle" style="margin-bottom:12px">
         <div class="gcard-label">${label}</div>
         <div class="idle-placeholder">${waitMsg}</div>
-        ${S.coachOn && tA && tB ? `<button class="end-btn" onclick="startPoGame('${key}')">Start Game</button>` : ''}
+        ${tA && tB ? `<button class="end-btn" onclick="startPoGame('${key}')">Start Game</button>` : ''}
       </div>`;
     }
 
@@ -656,19 +670,19 @@ function rPlayoff(el) {
       </div>
       <div class="score-team">
         <div class="tn">${xe(tA.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
+        <div class="sc-btns">
           <button class="sc-btn p" onclick="adj('c1','${key}','A',1)">+</button>
           <button class="sc-btn m" onclick="adj('c1','${key}','A',-1)">−</button>
-        </div>` : ''}
+        </div>
         <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="score-team">
         <div class="tn">${xe(tB.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
+        <div class="sc-btns">
           <button class="sc-btn p" onclick="adj('c1','${key}','B',1)">+</button>
           <button class="sc-btn m" onclick="adj('c1','${key}','B',-1)">−</button>
-        </div>` : ''}
+        </div>
         <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
       </div>
       <button class="end-btn ${reached ? '' : 'early'}" onclick="endPlayoffGame('${key}')">
@@ -824,6 +838,7 @@ function endPlayoffGame(key) {
 // ================================================================
 function rCourts23() {
   const el = document.getElementById('tab-courts23');
+  if (S.c23.playoff?.active) { rC23Playoff(el); return; }
   const {target, fmt, teams, c2, c3, promoted, demoted, queue, hist} = S.c23;
 
   const rGame = (g, num) => {
@@ -837,7 +852,7 @@ function rCourts23() {
       return `<div class="gcard idle" style="margin-bottom:12px">
         <div class="gcard-label">Court ${num} · ${icon} ${label}</div>
         <div class="idle-placeholder">Waiting for teams</div>
-        ${S.coachOn ? `<button class="end-btn" onclick="coachLaunchC23('c${num}')">Start Game</button>` : ''}
+        <button class="end-btn" onclick="coachLaunchC23('c${num}')">Start Game</button>
       </div>`;
     }
 
@@ -848,19 +863,19 @@ function rCourts23() {
       <div class="gcard-label">Court ${num} · ${icon} ${label}<span class="live-dot"></span></div>
       <div class="score-team">
         <div class="tn">${xe(tA.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
+        <div class="sc-btns">
           <button class="sc-btn p" onclick="adj('c23','c${num}','A',1)">+</button>
           <button class="sc-btn m" onclick="adj('c23','c${num}','A',-1)">−</button>
-        </div>` : ''}
+        </div>
         <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="score-team">
         <div class="tn">${xe(tB.name)}</div>
-        ${S.coachOn ? `<div class="sc-btns">
+        <div class="sc-btns">
           <button class="sc-btn p" onclick="adj('c23','c${num}','B',1)">+</button>
           <button class="sc-btn m" onclick="adj('c23','c${num}','B',-1)">−</button>
-        </div>` : ''}
+        </div>
         <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
       </div>
       <button class="end-btn ${reached ? '' : 'early'}" onclick="endC23('c${num}')">
@@ -898,7 +913,7 @@ function rCourts23() {
   el.innerHTML = `
     <div class="court-head">
       <span class="cn">Courts 2 & 3</span>
-      <span class="cf">${fmt} · King of Court</span>
+      <span class="cf">5 v 5</span>
       <span class="ct">First to ${target}</span>
     </div>
     ${rGame(c2, 2)}
@@ -1122,7 +1137,7 @@ function rStandings() {
   const g1 = S.c1.hist.length, g23 = S.c23.hist.length;
   el.innerHTML = `
     ${tbl(S.c1.teams, 'Main Court · 3v3')}
-    ${tbl(S.c23.teams, 'Courts 2 & 3 · King of Court')}
+    ${tbl(S.c23.teams, 'Courts 2 & 3 · 5 v 5')}
     <p style="text-align:center;color:var(--text-dim);font-size:12px;margin-top:4px">${g1+g23} games completed</p>
   `;
 }
@@ -1193,6 +1208,19 @@ function rCoach() {
       <div class="cp-head"><span class="cp-badge lav">Playoffs Active</span></div>
       <div class="cp-row"><label style="font-size:13px">Bracket is live on the Main Court tab.</label></div>
     </div>` : ''}
+
+    ${!S.c23.playoff?.active ? `
+    <div class="coach-panel" style="border-color:var(--lavender)">
+      <div class="cp-head"><span class="cp-badge lav">Playoffs</span><span style="font-size:13px;color:var(--text-dim)">Courts 2 & 3</span></div>
+      <div class="cp-row">
+        <label>Start 6-team playoff bracket (seeds by current standings)</label>
+        <button class="act-btn" onclick="startC23Playoffs()" style="border-color:var(--lavender);color:var(--lavender-light)">Start</button>
+      </div>
+    </div>` : `
+    <div class="coach-panel sec">
+      <div class="cp-head"><span class="cp-badge lav">Courts 2/3 Playoffs Active</span></div>
+      <div class="cp-row"><label style="font-size:13px">Bracket is live on the Courts 2 & 3 tab.</label></div>
+    </div>`}
 
     <div class="coach-panel sec">
       <div class="cp-head"><span class="cp-badge lav">Main Court Teams</span></div>
@@ -1338,6 +1366,215 @@ function toast(msg) {
   t.textContent = msg; t.classList.add('show');
   clearTimeout(_tt);
   _tt = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ================================================================
+// COURTS 2/3 PLAYOFF
+// ================================================================
+function startC23Playoffs() {
+  const teams = S.c23.teams;
+  if (teams.length < 6) { toast('Need at least 6 teams for playoffs'); return; }
+
+  const sorted = [...teams].sort((a,b) =>
+    b.wins - a.wins || a.losses - b.losses || (b.pf - b.pa) - (a.pf - a.pa)
+  );
+
+  S.c23.playoff.seeds = sorted.map(t => t.id);
+  const [s1,s2,s3,s4,s5,s6] = S.c23.playoff.seeds;
+
+  S.c23.playoff.games.qfA         = {tA:s3,   tB:s6,   sA:0,sB:0,on:true, done:false,wId:null,lId:null};
+  S.c23.playoff.games.qfB         = {tA:s4,   tB:s5,   sA:0,sB:0,on:true, done:false,wId:null,lId:null};
+  S.c23.playoff.games.sfA         = {tA:s2,   tB:null, sA:0,sB:0,on:false,done:false,wId:null,lId:null};
+  S.c23.playoff.games.sfB         = {tA:s1,   tB:null, sA:0,sB:0,on:false,done:false,wId:null,lId:null};
+  S.c23.playoff.games.consolation = {tA:null, tB:null, sA:0,sB:0,on:false,done:false,wId:null,lId:null};
+  S.c23.playoff.games.championship= {tA:null, tB:null, sA:0,sB:0,on:false,done:false,wId:null,lId:null};
+
+  S.c23.c2.on = false; S.c23.c3.on = false;
+  S.c23.queue = []; S.c23.promoted = []; S.c23.demoted = [];
+  S.c23.playoff.active = true;
+
+  save(); render();
+  toast('Courts 2/3 playoffs started!');
+}
+
+function startC23PoGame(key) {
+  const g = S.c23.playoff.games[key];
+  if (!g || !g.tA || !g.tB || g.on || g.done) return;
+  g.on = true;
+  save(); render();
+}
+
+function endC23PlayoffGame(key) {
+  const po = S.c23.playoff;
+  const g = po.games[key];
+  if (!g || !g.on || !g.tA || !g.tB) return;
+
+  const teams = S.c23.teams;
+  const tA = teams.find(t => t.id === g.tA);
+  const tB = teams.find(t => t.id === g.tB);
+  const target = S.c23.target;
+
+  const aWins = g.sA >= g.sB;
+  const wId = aWins ? g.tA : g.tB;
+  const lId = aWins ? g.tB : g.tA;
+  const wS  = aWins ? g.sA : g.sB;
+  const lS  = aWins ? g.sB : g.sA;
+  const wNm = (aWins ? tA : tB)?.name ?? '?';
+  const lNm = (aWins ? tB : tA)?.name ?? '?';
+
+  const labels = {qfA:'QF (3v6)',qfB:'QF (4v5)',sfA:'Semifinal',sfB:'Semifinal',championship:'Championship',consolation:'Consolation'};
+  let moveMsg = '';
+  if (key === 'qfA')        moveMsg = `${xe(wNm)} advances to SF vs Seed #2.<br>${xe(lNm)} plays consolation.`;
+  else if (key === 'qfB')   moveMsg = `${xe(wNm)} advances to SF vs Seed #1.<br>${xe(lNm)} plays consolation.`;
+  else if (key === 'sfA' || key === 'sfB') moveMsg = `${xe(wNm)} advances to the Championship!`;
+  else if (key === 'championship') moveMsg = `🏆 ${xe(wNm)} wins Courts 2 & 3!`;
+  else if (key === 'consolation')  moveMsg = `${xe(wNm)} finishes 5th.`;
+
+  modal({
+    title: `${labels[key]} Result`,
+    body: `<strong>${xe(wNm)}</strong> wins ${wS}–${lS} over ${xe(lNm)}.<br><br>${moveMsg}`,
+    ok: 'Confirm',
+    onOk: () => {
+      const w = teams.find(t => t.id === wId);
+      const l = teams.find(t => t.id === lId);
+      if (w) { w.wins++; w.pf += wS; w.pa += lS; }
+      if (l) { l.losses++; l.pf += lS; l.pa += wS; }
+      S.c23.hist.push({wId,lId,wS,lS,ts:Date.now(),playoff:key});
+
+      g.done = true; g.on = false; g.wId = wId; g.lId = lId;
+      g.sA = aWins ? wS : lS; g.sB = aWins ? lS : wS;
+
+      if (key === 'qfA') {
+        po.games.sfA.tB = wId;
+        if (po.games.sfA.tA && po.games.sfA.tB) po.games.sfA.on = true;
+        po.games.consolation.tA = lId;
+        if (po.games.consolation.tA && po.games.consolation.tB) po.games.consolation.on = true;
+      } else if (key === 'qfB') {
+        po.games.sfB.tB = wId;
+        if (po.games.sfB.tA && po.games.sfB.tB) po.games.sfB.on = true;
+        po.games.consolation.tB = lId;
+        if (po.games.consolation.tA && po.games.consolation.tB) po.games.consolation.on = true;
+      } else if (key === 'sfA') {
+        po.games.championship.tA = wId;
+        if (po.games.championship.tA && po.games.championship.tB) po.games.championship.on = true;
+      } else if (key === 'sfB') {
+        po.games.championship.tB = wId;
+        if (po.games.championship.tA && po.games.championship.tB) po.games.championship.on = true;
+      }
+
+      save(); render();
+      toast(key === 'championship' ? `🏆 ${wNm} wins!` : `${wNm} wins!`);
+    }
+  });
+}
+
+function adjC23Po(key, side, d) {
+  const g = S.c23.playoff.games[key];
+  if (!g || !g.on) return;
+  if (side === 'A') g.sA = Math.max(0, g.sA + d);
+  else              g.sB = Math.max(0, g.sB + d);
+  save(); render();
+}
+
+function rC23Playoff(el) {
+  const {target, teams, playoff} = S.c23;
+  const {seeds, games} = playoff;
+
+  const seedName = (idx) => {
+    const id = seeds[idx];
+    return id ? xe(teams.find(t => t.id === id)?.name ?? '?') : '?';
+  };
+
+  const pgCard = (key, label, badge, badgeCls) => {
+    const g = games[key];
+    const tA = g.tA ? teams.find(t => t.id === g.tA) : null;
+    const tB = g.tB ? teams.find(t => t.id === g.tB) : null;
+
+    if (g.done) {
+      const w = teams.find(t => t.id === g.wId);
+      const l = teams.find(t => t.id === g.lId);
+      return `<div class="gcard done" style="margin-bottom:12px">
+        <div class="gcard-label" style="display:flex;align-items:center;justify-content:space-between">
+          <span>${label}</span>
+          <span style="background:var(--success);color:var(--navy);font-size:9px;padding:2px 8px;border-radius:10px;font-weight:800">FINAL</span>
+        </div>
+        <div class="score-team"><div class="tn w">${xe(w?.name??'?')}</div><div class="snum win">${g.sA>=g.sB?g.sA:g.sB}</div></div>
+        <div class="vs-sep">— vs —</div>
+        <div class="score-team"><div class="tn">${xe(l?.name??'?')}</div><div class="snum">${g.sA>=g.sB?g.sB:g.sA}</div></div>
+      </div>`;
+    }
+
+    if (!g.on || !tA || !tB) {
+      const waitMsg = (!tA || !tB) ? 'Waiting for results…' : 'Not started';
+      return `<div class="gcard idle" style="margin-bottom:12px">
+        <div class="gcard-label">${label}</div>
+        <div class="idle-placeholder">${waitMsg}</div>
+        ${tA && tB ? `<button class="end-btn" onclick="startC23PoGame('${key}')">Start Game</button>` : ''}
+      </div>`;
+    }
+
+    const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
+    const reached = g.sA >= target || g.sB >= target;
+    const borderCls = badgeCls === 'rose' ? 'court3live' : 'court2live';
+
+    return `<div class="gcard ${borderCls}" style="margin-bottom:12px">
+      <div class="gcard-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>${label}<span class="live-dot"></span></span>
+        <span style="background:var(--${badgeCls==='rose'?'rose':'lavender'});color:var(--navy);font-size:9px;padding:2px 8px;border-radius:10px;font-weight:800">${badge}</span>
+      </div>
+      <div class="score-team">
+        <div class="tn">${xe(tA.name)}</div>
+        <div class="sc-btns">
+          <button class="sc-btn p" onclick="adjC23Po('${key}','A',1)">+</button>
+          <button class="sc-btn m" onclick="adjC23Po('${key}','A',-1)">−</button>
+        </div>
+        <div class="snum ${aHi?'hi':''}">${g.sA}</div>
+      </div>
+      <div class="vs-sep">— vs —</div>
+      <div class="score-team">
+        <div class="tn">${xe(tB.name)}</div>
+        <div class="sc-btns">
+          <button class="sc-btn p" onclick="adjC23Po('${key}','B',1)">+</button>
+          <button class="sc-btn m" onclick="adjC23Po('${key}','B',-1)">−</button>
+        </div>
+        <div class="snum ${bHi?'hi':''}">${g.sB}</div>
+      </div>
+      <button class="end-btn ${reached?'':'early'}" onclick="endC23PlayoffGame('${key}')">
+        ${reached
+          ? `End Game · ${g.sA>=target?xe(tA.name):xe(tB.name)} wins!`
+          : 'End Game Early'}
+      </button>
+    </div>`;
+  };
+
+  const bracket = `
+    <div class="move-card" style="margin-bottom:14px">
+      <div class="move-lbl">Bracket · Seeds</div>
+      <div class="move-row" style="font-size:12px"><span style="color:var(--lavender);font-weight:800;min-width:22px">#1</span> ${seedName(0)} — BYE to Semis</div>
+      <div class="move-row" style="font-size:12px"><span style="color:var(--lavender);font-weight:800;min-width:22px">#2</span> ${seedName(1)} — BYE to Semis</div>
+      <div class="move-row" style="font-size:12px"><span style="color:var(--silver);font-weight:800;min-width:22px">#3</span> ${seedName(2)} vs #6 ${seedName(5)}</div>
+      <div class="move-row" style="font-size:12px"><span style="color:var(--silver);font-weight:800;min-width:22px">#4</span> ${seedName(3)} vs #5 ${seedName(4)}</div>
+    </div>`;
+
+  el.innerHTML = `
+    <div class="court-head">
+      <span class="cn">Courts 2 & 3</span>
+      <span class="cf">5 v 5 · Playoffs</span>
+      <span class="ct">First to ${target}</span>
+    </div>
+    ${bracket}
+    <div class="hist-head" style="margin-bottom:10px">Quarterfinals</div>
+    ${pgCard('qfA','#3 vs #6','QF','lav')}
+    ${pgCard('qfB','#4 vs #5','QF','lav')}
+    <div class="hist-head" style="margin-bottom:10px">Semifinals</div>
+    ${pgCard('sfA','#2 vs QF-A Winner','SF','lav')}
+    ${pgCard('sfB','#1 vs QF-B Winner','SF','lav')}
+    <div class="hist-head" style="margin-bottom:10px">Finals</div>
+    <div class="games-grid">
+      <div>${pgCard('championship','🏆 Championship','FINAL','lav')}</div>
+      <div>${pgCard('consolation','Consolation','5th/6th','rose')}</div>
+    </div>
+  `;
 }
 
 // ================================================================
