@@ -1169,6 +1169,38 @@ function rCoach() {
       <div class="cp-row"><label style="font-size:13px">Bracket is live on the Courts 2 & 3 tab.</label></div>
     </div>`}
 
+    ${!S.c1.playoff?.active ? `
+    <div class="coach-panel sec">
+      <div class="cp-head"><span class="cp-badge lav">Main Court Lineup</span></div>
+      ${S.c1.games.filter(g => g.on && g.tA && g.tB).map(g => {
+        const tA = S.c1.teams.find(t => t.id === g.tA);
+        const tB = S.c1.teams.find(t => t.id === g.tB);
+        return `
+        <div class="cp-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+          <span style="font-size:12px;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:1px">Active game</span>
+          <div style="display:flex;gap:6px;width:100%;flex-wrap:wrap">
+            <button class="act-btn" style="flex:1;text-align:center" onclick="pickSwap('${g.id}','A')">⇄ ${xe(tA?.name??'?')}</button>
+            <span style="align-self:center;color:var(--text-dim);font-size:12px">vs</span>
+            <button class="act-btn" style="flex:1;text-align:center" onclick="pickSwap('${g.id}','B')">⇄ ${xe(tB?.name??'?')}</button>
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:10px">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);font-weight:700;margin-bottom:6px">Sitting queue — next up first</div>
+        ${S.c1.sitting.length === 0 ? '<div style="font-size:13px;color:var(--text-dim);padding:4px 0">No one sitting</div>' :
+          S.c1.sitting.map((id, i) => {
+            const t = S.c1.teams.find(t => t.id === id);
+            return t ? `
+            <div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--border)">
+              <span style="flex:1;font-size:13px;font-weight:700">${xe(t.name)}</span>
+              ${i > 0 ? `<button class="act-btn" onclick="moveSittingUp(${i})" style="padding:3px 8px">↑</button>` : '<span style="width:30px"></span>'}
+              ${i < S.c1.sitting.length-1 ? `<button class="act-btn" onclick="moveSittingDown(${i})" style="padding:3px 8px">↓</button>` : '<span style="width:30px"></span>'}
+              <button class="act-btn" onclick="moveSittingToBack(${i})" style="padding:3px 8px;font-size:11px">→ back</button>
+            </div>` : '';
+          }).join('')}
+      </div>
+    </div>` : ''}
+
     <div class="coach-panel sec">
       <div class="cp-head"><span class="cp-badge lav">Main Court Teams</span></div>
       ${S.c1.teams.map(t => `
@@ -1266,6 +1298,58 @@ function fullReset() {
     okCls: 'rose',
     onOk: () => { localStorage.removeItem('tourn_v2'); location.reload(); }
   });
+}
+
+// ================================================================
+// LINEUP MANAGEMENT (COACH)
+// ================================================================
+function pickSwap(gameId, slot) {
+  const g = S.c1.games.find(x => x.id === gameId);
+  if (!g || !g.on) return;
+  const curId = slot === 'A' ? g.tA : g.tB;
+  const curTeam = S.c1.teams.find(t => t.id === curId);
+  if (S.c1.sitting.length === 0) { toast('No sitting teams available'); return; }
+  const choices = S.c1.sitting.map(id => {
+    const t = S.c1.teams.find(x => x.id === id);
+    return t ? `<button class="act-btn" style="display:block;width:100%;margin-bottom:8px;padding:10px 14px;text-align:left"
+      onclick="doSwap('${gameId}','${slot}','${id}');mxClose()">${xe(t.name)}</button>` : '';
+  }).join('');
+  modal({
+    title: `Sub out ${xe(curTeam?.name ?? '?')}`,
+    body: `Who comes in?<br><br>${choices}`,
+    ok: 'Close',
+    onOk: () => {}
+  });
+}
+
+function doSwap(gameId, slot, newId) {
+  const g = S.c1.games.find(x => x.id === gameId);
+  if (!g || !g.on) return;
+  const oldId = slot === 'A' ? g.tA : g.tB;
+  S.c1.sitting = S.c1.sitting.filter(id => id !== newId);
+  S.c1.sitting.push(oldId);
+  if (slot === 'A') g.tA = newId; else g.tB = newId;
+  save(); render();
+  const t = S.c1.teams.find(t => t.id === newId);
+  toast(`${xe(t?.name ?? 'Team')} is now playing`);
+}
+
+function moveSittingUp(i) {
+  if (i <= 0) return;
+  [S.c1.sitting[i-1], S.c1.sitting[i]] = [S.c1.sitting[i], S.c1.sitting[i-1]];
+  save(); render();
+}
+
+function moveSittingDown(i) {
+  if (i >= S.c1.sitting.length - 1) return;
+  [S.c1.sitting[i], S.c1.sitting[i+1]] = [S.c1.sitting[i+1], S.c1.sitting[i]];
+  save(); render();
+}
+
+function moveSittingToBack(i) {
+  const [id] = S.c1.sitting.splice(i, 1);
+  S.c1.sitting.push(id);
+  save(); render();
 }
 
 // ================================================================
