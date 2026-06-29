@@ -121,6 +121,10 @@ input::placeholder{color:var(--text-dim)}
 .sc-btn{background:var(--navy-light);border:1px solid var(--border);color:var(--text);border-radius:7px;width:30px;height:26px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1}
 .sc-btn.p:hover{background:var(--lavender);border-color:var(--lavender);color:var(--navy)}
 .sc-btn.m:hover{background:var(--rose);border-color:var(--rose);color:#fff}
+.sc-input{width:64px;text-align:center;font-size:28px;font-weight:900;line-height:1;letter-spacing:-1px;background:var(--navy-light);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:6px 0;flex-shrink:0}
+.sc-input::-webkit-inner-spin-button,.sc-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.sc-input:focus{border-color:var(--lavender)}
+.sc-input.hi{color:var(--rose)}
 
 .vs-sep{text-align:center;font-size:10px;letter-spacing:1px;color:var(--text-dim);padding:2px 0;font-weight:700}
 
@@ -542,20 +546,14 @@ function rCourt1() {
       <div class="gcard-label">Game ${idx+1}<span class="live-dot"></span></div>
       <div class="score-team">
         <div class="tn">${xe(tA.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${g.id}','A',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${g.id}','A',-1)">−</button>
-        </div>
-        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+        <input type="number" class="sc-input ${aHi ? 'hi' : ''}" value="${g.sA}" min="0" inputmode="numeric"
+          onchange="setScore('c1','${g.id}','A',this.value)">
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="score-team">
         <div class="tn">${xe(tB.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${g.id}','B',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${g.id}','B',-1)">−</button>
-        </div>
-        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+        <input type="number" class="sc-input ${bHi ? 'hi' : ''}" value="${g.sB}" min="0" inputmode="numeric"
+          onchange="setScore('c1','${g.id}','B',this.value)">
       </div>
       <button class="end-btn" onclick="endC1('${g.id}')">End Game</button>
     </div>`;
@@ -651,20 +649,14 @@ function rPlayoff(el) {
       </div>
       <div class="score-team">
         <div class="tn">${xe(tA.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${key}','A',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${key}','A',-1)">−</button>
-        </div>
-        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+        <input type="number" class="sc-input ${aHi ? 'hi' : ''}" value="${g.sA}" min="0" inputmode="numeric"
+          onchange="setScore('c1','${key}','A',this.value)">
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="score-team">
         <div class="tn">${xe(tB.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c1','${key}','B',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c1','${key}','B',-1)">−</button>
-        </div>
-        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+        <input type="number" class="sc-input ${bHi ? 'hi' : ''}" value="${g.sB}" min="0" inputmode="numeric"
+          onchange="setScore('c1','${key}','B',this.value)">
       </div>
       <button class="end-btn" onclick="endPlayoffGame('${key}')">End Game</button>
     </div>`;
@@ -838,20 +830,14 @@ function rCourts23() {
       <div class="gcard-label">Court ${num} · ${icon} ${label}<span class="live-dot"></span></div>
       <div class="score-team">
         <div class="tn">${xe(tA.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c23','c${num}','A',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c23','c${num}','A',-1)">−</button>
-        </div>
-        <div class="snum ${aHi ? 'hi' : ''}">${g.sA}</div>
+        <input type="number" class="sc-input ${aHi ? 'hi' : ''}" value="${g.sA}" min="0" inputmode="numeric"
+          onchange="setScore('c23','c${num}','A',this.value)">
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="score-team">
         <div class="tn">${xe(tB.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adj('c23','c${num}','B',1)">+</button>
-          <button class="sc-btn m" onclick="adj('c23','c${num}','B',-1)">−</button>
-        </div>
-        <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
+        <input type="number" class="sc-input ${bHi ? 'hi' : ''}" value="${g.sB}" min="0" inputmode="numeric"
+          onchange="setScore('c23','c${num}','B',this.value)">
       </div>
       <button class="end-btn" onclick="endC23('c${num}')">End Game</button>
     </div>`;
@@ -901,9 +887,9 @@ function rCourts23() {
 }
 
 // ================================================================
-// SCORE ADJUST
+// SCORE ENTRY
 // ================================================================
-function adj(section, ref, side, d) {
+function setScore(section, ref, side, val) {
   let g;
   if (section === 'c1') {
     g = S.c1.games.find(x => x.id === ref) ?? S.c1.playoff?.games[ref];
@@ -911,8 +897,9 @@ function adj(section, ref, side, d) {
     g = S.c23[ref];
   }
   if (!g || !g.on) return;
-  if (side === 'A') g.sA = Math.max(0, g.sA + d);
-  else              g.sB = Math.max(0, g.sB + d);
+  const n = Math.max(0, parseInt(val) || 0);
+  if (side === 'A') g.sA = n;
+  else              g.sB = n;
   save(); render();
 }
 
@@ -1426,11 +1413,12 @@ function endC23PlayoffGame(key) {
   });
 }
 
-function adjC23Po(key, side, d) {
+function setScoreC23Po(key, side, val) {
   const g = S.c23.playoff.games[key];
   if (!g || !g.on) return;
-  if (side === 'A') g.sA = Math.max(0, g.sA + d);
-  else              g.sB = Math.max(0, g.sB + d);
+  const n = Math.max(0, parseInt(val) || 0);
+  if (side === 'A') g.sA = n;
+  else              g.sB = n;
   save(); render();
 }
 
@@ -1481,20 +1469,14 @@ function rC23Playoff(el) {
       </div>
       <div class="score-team">
         <div class="tn">${xe(tA.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adjC23Po('${key}','A',1)">+</button>
-          <button class="sc-btn m" onclick="adjC23Po('${key}','A',-1)">−</button>
-        </div>
-        <div class="snum ${aHi?'hi':''}">${g.sA}</div>
+        <input type="number" class="sc-input ${aHi?'hi':''}" value="${g.sA}" min="0" inputmode="numeric"
+          onchange="setScoreC23Po('${key}','A',this.value)">
       </div>
       <div class="vs-sep">— vs —</div>
       <div class="score-team">
         <div class="tn">${xe(tB.name)}</div>
-        <div class="sc-btns">
-          <button class="sc-btn p" onclick="adjC23Po('${key}','B',1)">+</button>
-          <button class="sc-btn m" onclick="adjC23Po('${key}','B',-1)">−</button>
-        </div>
-        <div class="snum ${bHi?'hi':''}">${g.sB}</div>
+        <input type="number" class="sc-input ${bHi?'hi':''}" value="${g.sB}" min="0" inputmode="numeric"
+          onchange="setScoreC23Po('${key}','B',this.value)">
       </div>
       <button class="end-btn" onclick="endC23PlayoffGame('${key}')">End Game</button>
     </div>`;
