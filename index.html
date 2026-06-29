@@ -227,10 +227,6 @@ input::placeholder{color:var(--text-dim)}
   <div class="s-card">
     <div class="s-label">Main Court <span class="tag">3v3</span></div>
     <div id="c1-teams"></div>
-    <div class="cfg-row">
-      <label>Win score</label>
-      <input type="number" id="c1-target" value="15" min="1" max="99">
-    </div>
   </div>
 
   <!-- Courts 2 & 3 -->
@@ -238,10 +234,6 @@ input::placeholder{color:var(--text-dim)}
     <div class="s-label">Courts 2 & 3 <span class="tag">5 v 5</span></div>
     <div id="c23-teams"></div>
     <button class="add-btn" onclick="addC23Team()">+ Add team</button>
-    <div class="cfg-row">
-      <label>Win score</label>
-      <input type="number" id="c23-target" value="11" min="1" max="99">
-    </div>
   </div>
 
   <!-- Coach PIN -->
@@ -408,13 +400,10 @@ function startTournament() {
   if (c23n.length < 2) { toast('Add at least 2 team names for Courts 2/3'); return; }
 
   const pin = document.getElementById('setup-pin').value.trim();
-  const c1t = parseInt(document.getElementById('c1-target').value) || 15;
-  const c23t = parseInt(document.getElementById('c23-target').value) || 11;
 
   const mk = (name, id) => ({id, name, wins:0, losses:0, pf:0, pa:0});
 
   S.c1.teams = c1n.map((n,i) => mk(n, `c1-${i}`));
-  S.c1.target = c1t;
   S.c1.sitting = [...S.c1.teams.map(t => t.id)];
   S.c1.playoff = {
     active: false, seeds: [],
@@ -429,7 +418,6 @@ function startTournament() {
   };
 
   S.c23.teams = c23n.map((n,i) => mk(n, `c23-${i}`));
-  S.c23.target = c23t;
   S.c23.fmt = setupFmt;
   S.c23.queue = [...S.c23.teams.map(t => t.id)];
   S.c23.playoff = {
@@ -549,7 +537,6 @@ function rCourt1() {
     }
 
     const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
-    const reached = g.sA >= target || g.sB >= target;
 
     return `<div class="gcard live">
       <div class="gcard-label">Game ${idx+1}<span class="live-dot"></span></div>
@@ -570,11 +557,7 @@ function rCourt1() {
         </div>
         <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
       </div>
-      <button class="end-btn ${reached ? '' : 'early'}" onclick="endC1('${g.id}')">
-        ${reached
-          ? `End Game · ${g.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
-          : 'End Game Early'}
-      </button>
+      <button class="end-btn" onclick="endC1('${g.id}')">End Game</button>
     </div>`;
   }).join('');
 
@@ -610,7 +593,6 @@ function rCourt1() {
     <div class="court-head">
       <span class="cn">Main Court</span>
       <span class="cf">3v3 · Round Robin</span>
-      <span class="ct">First to ${target}</span>
     </div>
     <div class="games-grid">${gcards}</div>
     ${sitHtml}
@@ -660,7 +642,6 @@ function rPlayoff(el) {
     }
 
     const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
-    const reached = g.sA >= target || g.sB >= target;
     const borderCls = badgeCls === 'rose' ? 'court3live' : 'live';
 
     return `<div class="gcard ${borderCls}" style="margin-bottom:12px">
@@ -685,11 +666,7 @@ function rPlayoff(el) {
         </div>
         <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
       </div>
-      <button class="end-btn ${reached ? '' : 'early'}" onclick="endPlayoffGame('${key}')">
-        ${reached
-          ? `End Game · ${g.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
-          : 'End Game Early'}
-      </button>
+      <button class="end-btn" onclick="endPlayoffGame('${key}')">End Game</button>
     </div>`;
   };
 
@@ -714,7 +691,6 @@ function rPlayoff(el) {
     <div class="court-head">
       <span class="cn">Main Court</span>
       <span class="cf">3v3 · Playoffs</span>
-      <span class="ct">First to ${target}</span>
     </div>
     ${bracket}
     <div class="hist-head" style="margin-bottom:10px">Quarterfinals</div>
@@ -857,7 +833,6 @@ function rCourts23() {
     }
 
     const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
-    const reached = g.sA >= target || g.sB >= target;
 
     return `<div class="gcard ${g.on ? cls : 'done'}" style="margin-bottom:12px">
       <div class="gcard-label">Court ${num} · ${icon} ${label}<span class="live-dot"></span></div>
@@ -878,11 +853,7 @@ function rCourts23() {
         </div>
         <div class="snum ${bHi ? 'hi' : ''}">${g.sB}</div>
       </div>
-      <button class="end-btn ${reached ? '' : 'early'}" onclick="endC23('c${num}')">
-        ${reached
-          ? `End Game · ${g.sA >= target ? xe(tA.name) : xe(tB.name)} wins!`
-          : 'End Game Early'}
-      </button>
+      <button class="end-btn" onclick="endC23('c${num}')">End Game</button>
     </div>`;
   };
 
@@ -914,7 +885,6 @@ function rCourts23() {
     <div class="court-head">
       <span class="cn">Courts 2 & 3</span>
       <span class="cf">5 v 5</span>
-      <span class="ct">First to ${target}</span>
     </div>
     ${rGame(c2, 2)}
     ${rGame(c3, 3)}
@@ -1180,16 +1150,6 @@ function rCoach() {
     <div class="coach-panel">
       <div class="cp-head"><span class="cp-badge">Active</span><span style="font-size:13px;color:var(--text-dim)">Coach Mode On</span></div>
       <div class="cp-row">
-        <label>Main Court win score</label>
-        <input type="number" value="${S.c1.target}" min="1" max="99"
-          onchange="S.c1.target=parseInt(this.value)||15;save();render()">
-      </div>
-      <div class="cp-row">
-        <label>Courts 2/3 win score</label>
-        <input type="number" value="${S.c23.target}" min="1" max="99"
-          onchange="S.c23.target=parseInt(this.value)||11;save();render()">
-      </div>
-      <div class="cp-row">
         <label>Change coach PIN</label>
         <input type="password" value="${S.coachPin}" maxlength="4" inputmode="numeric"
           onchange="S.coachPin=this.value||'1234';save();toast('PIN updated')">
@@ -1412,8 +1372,6 @@ function endC23PlayoffGame(key) {
   const teams = S.c23.teams;
   const tA = teams.find(t => t.id === g.tA);
   const tB = teams.find(t => t.id === g.tB);
-  const target = S.c23.target;
-
   const aWins = g.sA >= g.sB;
   const wId = aWins ? g.tA : g.tB;
   const lId = aWins ? g.tB : g.tA;
@@ -1514,7 +1472,6 @@ function rC23Playoff(el) {
     }
 
     const aHi = g.sA > g.sB, bHi = g.sB > g.sA;
-    const reached = g.sA >= target || g.sB >= target;
     const borderCls = badgeCls === 'rose' ? 'court3live' : 'court2live';
 
     return `<div class="gcard ${borderCls}" style="margin-bottom:12px">
@@ -1539,11 +1496,7 @@ function rC23Playoff(el) {
         </div>
         <div class="snum ${bHi?'hi':''}">${g.sB}</div>
       </div>
-      <button class="end-btn ${reached?'':'early'}" onclick="endC23PlayoffGame('${key}')">
-        ${reached
-          ? `End Game · ${g.sA>=target?xe(tA.name):xe(tB.name)} wins!`
-          : 'End Game Early'}
-      </button>
+      <button class="end-btn" onclick="endC23PlayoffGame('${key}')">End Game</button>
     </div>`;
   };
 
@@ -1560,7 +1513,6 @@ function rC23Playoff(el) {
     <div class="court-head">
       <span class="cn">Courts 2 & 3</span>
       <span class="cf">5 v 5 · Playoffs</span>
-      <span class="ct">First to ${target}</span>
     </div>
     ${bracket}
     <div class="hist-head" style="margin-bottom:10px">Quarterfinals</div>
